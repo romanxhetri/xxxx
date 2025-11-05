@@ -1,45 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { MenuItem as MenuItemType } from '../types';
-import { getMenuItems } from '../services/geminiService';
+import { menuItemsData } from '../data/staticData';
 import MenuItem from './MenuItem';
-import LoadingSpinner from './LoadingSpinner';
 import MenuItemModal from './MenuItemModal';
 
 const Menu: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [selectedItem, setSelectedItem] = useState<MenuItemType | null>(null);
 
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        setLoading(true);
-        const data = await getMenuItems();
-        setMenuItems(data);
-        setError(null);
-      } catch (err) {
-        setError('Could not load our menu. Our chefs are working on it!');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMenu();
-  }, []);
-
   const categories = useMemo(() => {
-    if (menuItems.length === 0) return [];
-    return ['All', ...Array.from(new Set(menuItems.map(item => item.category)))];
-  }, [menuItems]);
+    if (menuItemsData.length === 0) return [];
+    const uniqueCategories = [...new Set(menuItemsData.map(item => item.category))];
+    // Ensure a specific order
+    const preferredOrder = ['Starters', 'Potato Mains', 'Hearty Mains', 'Sides', 'Desserts', 'Beverages'];
+    return ['All', ...preferredOrder.filter(cat => uniqueCategories.includes(cat))];
+  }, []);
 
   const filteredItems = useMemo(() => {
     if (activeCategory === 'All') {
-      return menuItems;
+      return menuItemsData;
     }
-    return menuItems.filter(item => item.category === activeCategory);
-  }, [menuItems, activeCategory]);
+    return menuItemsData.filter(item => item.category === activeCategory);
+  }, [activeCategory]);
 
   return (
     <>
@@ -49,34 +31,27 @@ const Menu: React.FC = () => {
           <h2 className="text-4xl font-bold font-serif text-center mb-2 text-white">Our Menu</h2>
           <p className="text-lg text-gray-400 text-center mb-12">Crafted with passion, served with a smile.</p>
           
-          {loading && <div className="flex justify-center"><LoadingSpinner /></div>}
-          {error && <p className="text-center text-red-400">{error}</p>}
-          
-          {!loading && !error && (
-            <>
-              <div className="flex justify-center flex-wrap gap-2 md:gap-4 mb-12">
-                {categories.map(category => (
-                  <button 
-                    key={category}
-                    onClick={() => setActiveCategory(category)}
-                    className={`px-4 py-2 text-sm md:text-base font-semibold rounded-full transition-colors duration-300 ${
-                      activeCategory === category 
-                      ? 'bg-amber-500 text-white' 
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
+          <div className="flex justify-center flex-wrap gap-2 md:gap-4 mb-12">
+            {categories.map(category => (
+              <button 
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`px-4 py-2 text-sm md:text-base font-semibold rounded-full transition-colors duration-300 ${
+                  activeCategory === category 
+                  ? 'bg-amber-500 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {filteredItems.map(item => (
-                  <MenuItem key={item.id} item={item} onSelect={() => setSelectedItem(item)} />
-                ))}
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredItems.map(item => (
+              <MenuItem key={item.id} item={item} onSelect={() => setSelectedItem(item)} />
+            ))}
+          </div>
         </div>
       </section>
     </>
